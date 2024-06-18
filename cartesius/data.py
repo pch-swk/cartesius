@@ -1,3 +1,4 @@
+from typing import List, Optional, Dict, Union
 from functools import partial
 import json
 import math
@@ -14,7 +15,9 @@ import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import Dataset
 
-from cartesius.transforms import TRANSFORMS
+from cartesius.transforms import TRANSFORMS, Transform
+from cartesius.tasks import Task
+from cartesius.tokenizers import Tokenizer
 
 DATA_DIR = "data"
 
@@ -43,15 +46,17 @@ class PolygonDataset(Dataset):
             epoch. Defaults to 1000.
     """
 
-    def __init__(self,
-                 x_range,
-                 y_range,
-                 avg_radius_range,
-                 n_range,
-                 tasks=None,
-                 transforms=None,
-                 batch_size=64,
-                 n_batch_per_epoch=1000):
+    def __init__(
+        self,
+        x_range: List[int],
+        y_range: List[int],
+        avg_radius_range: List[float],
+        n_range: List[int],
+        tasks: Optional[Dict[str, Task]] = None,
+        transforms: Optional[List[Transform]] = None,
+        batch_size: int = 64,
+        n_batch_per_epoch: int = 1000
+    ):
         super().__init__()
 
         self.x_range = x_range
@@ -87,7 +92,15 @@ class PolygonDataset(Dataset):
 
         return p, labels
 
-    def _gen_poly(self, x_ctr, y_ctr, avg_radius, irregularity, spikeyness, n_vert):
+    def _gen_poly(
+        self,
+        x_ctr: float,
+        y_ctr: float,
+        avg_radius: float,
+        irregularity: float,
+        spikeyness: float,
+        n_vert: int
+    ) -> Union[Polygon, LineString, Point]:
         """Method taken from https://stackoverflow.com/a/25276331
 
         Start with the centre of the polygon at x_ctr, y_ctr, then creates the
@@ -155,7 +168,7 @@ class PolygonTestset(Dataset):
             they are generated and before the labels are computed. Defaults to None.
     """
 
-    def __init__(self, datafile, tasks=None, transforms=None):
+    def __init__(self, datafile: str, tasks: Optional[Dict[str, Task]] = None, transforms: Optional[List[Transform]] = None):
         super().__init__()
 
         self.tasks = list(tasks.values()) if tasks is not None else []
@@ -189,7 +202,7 @@ class PolygonTestset(Dataset):
         return p, labels
 
 
-def collate(samples, tokenizer):
+def collate(samples, tokenizer: Tokenizer):
     polygons = [s[0] for s in samples]
     labels = [s[1] for s in samples]
 
@@ -225,19 +238,20 @@ class PolygonDataModule(pl.LightningDataModule):
     """
 
     def __init__(  # pylint: disable=dangerous-default-value
-            self,
-            tasks,
-            tokenizer,
-            x_range=[-100, 100],
-            y_range=[-100, 100],
-            avg_radius_range=[0.25, 1, 2, 3, 4, 5, 6, 32],
-            n_range=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 50],
-            val_set_file="valset.json",
-            test_set_file="testset.json",
-            transforms=["norm_pos", "norm_static_scale"],
-            batch_size=64,
-            n_batch_per_epoch=1000,
-            n_workers=8):
+        self,
+        tasks: Optional[Dict[str, Task]],
+        tokenizer: Tokenizer,
+        x_range: List[int] = [-100, 100],
+        y_range: List[int] = [-100, 100],
+        avg_radius_range: List[float] = [0.25, 1, 2, 3, 4, 5, 6, 32],
+        n_range: List[int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 50],
+        val_set_file: str = "valset.json",
+        test_set_file: str = "testset.json",
+        transforms: List[str] = ["norm_pos", "norm_static_scale"],
+        batch_size: int = 64,
+        n_batch_per_epoch: int = 1000,
+        n_workers: int = 8
+    ):
         super().__init__()
 
         self.x_range = x_range
