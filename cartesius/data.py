@@ -79,6 +79,7 @@ class PolygonDataset(Dataset):
         avg_radius = random.choice(self.avg_radius_range)
         irregularity = random.random()
         spikeyness = random.random()
+        
         n = random.choice(self.n_range)
 
         p = self._gen_poly(x_ctr, y_ctr, avg_radius, irregularity, spikeyness, n)
@@ -132,6 +133,8 @@ class PolygonDataset(Dataset):
         lower = (2 * math.pi / n_vert) - irregularity
         upper = (2 * math.pi / n_vert) + irregularity
         angle_steps = np.random.uniform(lower, upper, n_vert)
+        angle_steps.sort()
+
         s = angle_steps.sum()
 
         # Normalize the steps so that point 0 and point n+1 are the same
@@ -141,17 +144,21 @@ class PolygonDataset(Dataset):
         # Now generate the points
         angle = random.uniform(0, 2 * math.pi)
         angles = np.cumsum(angle_steps) + angle
-        rs = np.clip(np.random.normal(avg_radius, spikeyness, n_vert), 0, 2 * avg_radius)
+        rs = np.clip(np.random.normal(avg_radius, spikeyness, n_vert), 0.1, 2 * avg_radius)
         xs = x_ctr + np.multiply(rs, np.cos(angles))
         ys = y_ctr + np.multiply(rs, np.sin(angles))
         points = [(x, y) for x, y in zip(xs, ys)]
 
         if len(points) == 1:
-            return Point(points)
+            geom = Point(points)
         elif len(points) == 2:
-            return LineString(points)
+            geom = LineString(points)
         else:
-            return Polygon(points)
+            geom = Polygon(points)
+
+        assert geom.is_valid, f"Generated geometry is invalid: {geom}"
+
+        return geom
 
 
 class PolygonTestset(Dataset):
