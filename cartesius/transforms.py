@@ -1,3 +1,5 @@
+import numpy as np
+
 from shapely.affinity import scale
 from shapely.affinity import translate
 from shapely.geometry import Point, Polygon
@@ -77,8 +79,27 @@ class NormalizeScaleStaticTransform(Transform):
         return scale(polygon, xfact=scale_ratio, yfact=scale_ratio, origin=ref)
 
 
+class NormalizeMaxNormTransform(Transform):
+    """Transform that normalizes the given polygon, so that the polygon's vertices
+    max norm is always 1.
+    """
+    
+    def __call__(self, polygon: Polygon) -> Polygon:
+        exterior_coordinates = np.array(polygon.exterior.coords)
+        centroid = exterior_coordinates.mean(axis=0)
+
+        centralized_coordinates = exterior_coordinates - centroid
+
+        max_norms = np.linalg.norm(centralized_coordinates, axis=1).max()
+
+        normalized_coordinates = centralized_coordinates / max_norms
+
+        return Polygon(normalized_coordinates)
+
+
 TRANSFORMS = {
     "norm_pos": NormalizePositionTransform,
     "norm_scale": NormalizeScaleTransform,
-    "norm_static_scale": NormalizeScaleStaticTransform
+    "norm_static_scale": NormalizeScaleStaticTransform,
+    "norm_max_norm": NormalizeMaxNormTransform
 }
