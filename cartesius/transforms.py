@@ -90,9 +90,9 @@ class NormalizeMaxNormTransform(Transform):
 
         centralized_coordinates = exterior_coordinates - centroid
 
-        max_norms = np.linalg.norm(centralized_coordinates, axis=1).max()
+        max_norm = np.linalg.norm(centralized_coordinates, axis=1).max()
 
-        normalized_coordinates = centralized_coordinates / max_norms
+        normalized_coordinates = centralized_coordinates / max_norm
 
         return Polygon(normalized_coordinates)
 
