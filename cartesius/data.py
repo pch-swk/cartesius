@@ -79,7 +79,6 @@ class PolygonDataset(Dataset):
         avg_radius = random.choice(self.avg_radius_range)
         irregularity = random.random()
         spikeyness = random.random()
-        
         n = random.choice(self.n_range)
 
         p = self._gen_poly(x_ctr, y_ctr, avg_radius, irregularity, spikeyness, n)
